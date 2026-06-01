@@ -80,7 +80,8 @@ final class ClockViewModel {
         guard let entry = activeEntry else { return }
         timerTask = Task { [weak self] in
             while !Task.isCancelled {
-                await MainActor.run { self?.elapsed = Date().timeIntervalSince(entry.clockInAt) }
+                guard let self else { break }
+                await MainActor.run { self.elapsed = Date().timeIntervalSince(entry.clockInAt) }
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -91,6 +92,4 @@ final class ClockViewModel {
         timerTask = nil
         elapsed = 0
     }
-
-    deinit { timerTask?.cancel() }
 }
