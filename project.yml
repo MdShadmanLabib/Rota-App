@@ -26,6 +26,10 @@ targets:
     platform: iOS
     sources:
       - path: Rota
+        excludes:
+          - "Resources/Info.plist"
+          - "Config/Secrets.example.xcconfig"
+          - "Config/Secrets.xcconfig"
     dependencies:
       - package: Supabase
         product: Supabase
