@@ -1,0 +1,26 @@
+# Xcode / generated project
+*.xcodeproj
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+*.moved-aside
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Secrets (never commit real keys)
+Rota/Config/Secrets.xcconfig
+
+# macOS
+.DS_Store
+
+# Fastlane / misc
+fastlane/report.xml
+fastlane/Preview.html
+*.ipa
+*.dSYM.zip
+*.dSYM

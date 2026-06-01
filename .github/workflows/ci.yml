@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & Test (iOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode & available simulators
+        run: |
+          xcodebuild -version
+          echo "--- available iOS runtimes ---"
+          xcrun simctl list runtimes
+
+      - name: Install tooling
+        run: brew install xcodegen xcbeautify
+
+      - name: Provide debug secrets config
+        run: cp Rota/Config/Secrets.example.xcconfig Rota/Config/Secrets.xcconfig
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project Rota.xcodeproj -scheme Rota
+
+      - name: Pick an available iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available --json | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; ids=[dev['udid'] for rt in d for dev in d[rt] if dev.get('isAvailable') and 'iPhone' in dev['name']]; print(ids[0] if ids else '')")
+          if [ -z "$UDID" ]; then echo 'No available iPhone simulator found'; xcrun simctl list devices available; exit 1; fi
+          echo "Using simulator UDID: $UDID"
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Build & test
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Rota.xcodeproj \
+            -scheme Rota \
+            -destination "id=$SIM_UDID" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            clean test | xcbeautify --renderer github-actions
