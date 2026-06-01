@@ -89,7 +89,7 @@ struct AnnouncementCard: View {
 struct AnnouncementComposer: View {
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
-    @State private var body = ""
+    @State private var message = ""
     @State private var pinned = false
     let onPost: (String, String, Bool) -> Void
 
@@ -98,7 +98,7 @@ struct AnnouncementComposer: View {
             Form {
                 Section("Announcement") {
                     TextField("Title", text: $title)
-                    TextField("Write your message…", text: $body, axis: .vertical).lineLimit(4...10)
+                    TextField("Write your message…", text: $message, axis: .vertical).lineLimit(4...10)
                 }
                 Section { Toggle("Pin to top", isOn: $pinned) }
             }
@@ -107,8 +107,8 @@ struct AnnouncementComposer: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Post") { onPost(title, body, pinned); dismiss() }
-                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty || body.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("Post") { onPost(title, message, pinned); dismiss() }
+                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty || message.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
