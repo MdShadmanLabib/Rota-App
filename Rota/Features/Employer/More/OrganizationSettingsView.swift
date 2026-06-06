@@ -13,24 +13,60 @@ struct OrganizationSettingsView: View {
         Form {
             Section("Organization") {
                 TextField("Name", text: $name)
-                LabeledContent("Invite code", value: session.organization?.inviteCode ?? "—")
+
+                LabeledContent(
+                    "Invite code",
+                    value: session.organization?.inviteCode ?? "—"
+                )
             }
+
             Section("Scheduling") {
-                Stepper("Overtime threshold: \(Int(overtimeThreshold))h/week", value: $overtimeThreshold, in: 20...80, step: 1)
+                Stepper(
+                    "Overtime threshold: \(Int(overtimeThreshold))h/week",
+                    value: $overtimeThreshold,
+                    in: 20...80,
+                    step: 1
+                )
             }
-            Section("Clock‑in") {
+
+            Section("Clock-in") {
                 VStack(alignment: .leading) {
-                    Text("Geofence radius: \(Int(radius))m").font(.Rota.subheadline)
-                    Slider(value: $radius, in: 50...500, step: 10)
+                    Text("Geofence radius: \(Int(radius))m")
+                        .font(.Rota.subheadline)
+
+                    Slider(
+                        value: $radius,
+                        in: 50...500,
+                        step: 10
+                    )
                 }
+
                 Text("Employees must be within this distance of the workplace to clock in.")
-                    .font(.Rota.caption).foregroundColor(Theme.Colors.textTertiary)
+                    .font(.Rota.caption)
+                    .foregroundColor(Theme.Colors.textTertiary)
             }
+
             Section {
-                Button { save() } label: {
-                    HStack { Spacer(); if isSaving { ProgressView() } else { Text("Save changes").fontWeight(.semibold) }; Spacer() }
+                Button {
+                    save()
+                } label: {
+                    HStack {
+                        Spacer()
+
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Text("Save changes")
+                                .fontWeight(.semibold)
+                        }
+
+                        Spacer()
+                    }
                 }
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(
+                    isSaving ||
+                    name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
             }
         }
         .navigationTitle("Organization")
@@ -40,6 +76,7 @@ struct OrganizationSettingsView: View {
 
     private func populate() {
         guard let org = session.organization else { return }
+
         name = org.name
         overtimeThreshold = org.weeklyOvertimeThreshold
         radius = org.clockInRadiusMeters
@@ -47,17 +84,30 @@ struct OrganizationSettingsView: View {
 
     private func save() {
         guard var org = session.organization else { return }
-        org.name = name.trimmingCharacters(in: .whitespaces)
+
+        org.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         org.weeklyOvertimeThreshold = overtimeThreshold
         org.clockInRadiusMeters = radius
+
         isSaving = true
+
         Task {
             do {
                 let updated = try await session.repository.updateOrganization(org)
-                await session.refreshOrganization(updated)
-                toasts.show("Organization updated")
-            } catch { toasts.error("Couldn't save changes") }
-            isSaving = false
+
+                await MainActor.run {
+                    // refreshOrganization is synchronous, so no await here
+                    session.refreshOrganization(updated)
+
+                    toasts.show("Organization updated")
+                    isSaving = false
+                }
+            } catch {
+                await MainActor.run {
+                    toasts.error("Couldn't save changes")
+                    isSaving = false
+                }
+            }
         }
     }
 }
